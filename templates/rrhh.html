@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Consolidación RRHH - Movilidad FFVV</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo-container">
+                <span class="icon">📊</span>
+                <h1>Panel de RRHH - Consolidador</h1>
+            </div>
+            <p class="subtitle">Consolidación de Planillas de Movilidad en Registro de Pasajes FFVV</p>
+            <nav class="app-nav">
+                <a href="/" class="nav-link">Vendedor</a>
+                <a href="/rrhh" class="nav-link active">Panel RRHH</a>
+            </nav>
+        </header>
+
+        <main class="app-main">
+            <div class="rrhh-grid">
+                <!-- Upload Section -->
+                <section class="form-card upload-section">
+                    <h2>Subir Planillas de Vendedores</h2>
+                    <p class="help-text">Arrastra aquí los archivos Excel (.xlsx) de planillas que te enviaron los vendedores. Se generará un archivo consolidado listo para descargar.</p>
+                    
+                    <div class="drop-zone" id="dropZone">
+                        <span class="drop-icon">📤</span>
+                        <p class="drop-text">Arrastra archivos aquí o haz clic para buscar</p>
+                        <input type="file" id="fileInput" multiple accept=".xlsx" class="hidden-input">
+                    </div>
+                </section>
+
+                <!-- Processing Queue -->
+                <section class="form-card queue-section">
+                    <h2>Planillas en Cola de Procesamiento</h2>
+                    <div class="table-responsive">
+                        <table class="queue-table" id="queueTable">
+                            <thead>
+                                <tr>
+                                    <th>Archivo</th>
+                                    <th>Vendedor</th>
+                                    <th>Periodo</th>
+                                    <th>Total S/.</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queueBody">
+                                <tr id="emptyQueueRow">
+                                    <td colspan="5" class="text-center py-4">No hay archivos en cola. Sube planillas para comenzar.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="form-actions mt-4 flex-between">
+                        <button type="button" id="btnClearQueue" class="btn btn-secondary" disabled>Vaciar Cola</button>
+                        <button type="button" id="btnConsolidar" class="btn btn-primary" disabled>📥 Generar y Descargar Consolidado</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Consolidation Results -->
+            <section class="form-card mt-4 hidden-input" id="resultsSection">
+                <h2>Resultados de la Consolidación</h2>
+                <div class="alert alert-success" id="successAlert">
+                    <strong>¡Consolidación exitosa!</strong> Se han guardado los datos en el archivo maestro de pasajes.
+                </div>
+                <div class="results-details" id="resultsDetails">
+                    <!-- Dynamic details will be written here -->
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>&copy; 2026 Corporación de Alimentos S.A.C. - Sistema de Movilidad de Fuerza de Ventas</p>
+        </footer>
+    </div>
+
+    <!-- Alert Modal for custom messages -->
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

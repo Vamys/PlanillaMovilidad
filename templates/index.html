@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planilla de Movilidad - Fuerza de Ventas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo-container">
+                <span class="icon">🚗</span>
+                <h1>Planilla de Movilidad</h1>
+            </div>
+            <p class="subtitle">Fuerza de Ventas - Corporación de Alimentos S.A.C.</p>
+            <nav class="app-nav">
+                <a href="/" class="nav-link active">Vendedor</a>
+                <a href="/rrhh" class="nav-link">Panel RRHH</a>
+            </nav>
+        </header>
+
+        <main class="app-main">
+            <form id="planillaForm" class="form-card">
+                <section class="form-section">
+                    <h2>Datos Generales</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="vendedorSelect">Vendedor / Trabajador</label>
+                            <select id="vendedorSelect" required>
+                                <option value="">-- Seleccione un Vendedor --</option>
+                                <option value="NUEVO">-- NUEVO VENDEDOR --</option>
+                            </select>
+                            <input type="text" id="nuevoVendedorInput" class="hidden-input mt-2" placeholder="Escriba nombres y apellidos del vendedor">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dniInput">D.N.I. del Trabajador</label>
+                            <input type="text" id="dniInput" maxlength="8" pattern="\d{8}" placeholder="8 dígitos" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bancoSelect">Banco</label>
+                            <select id="bancoSelect" required>
+                                <option value="">-- Seleccione un Banco --</option>
+                                <option value="BBVA">BBVA</option>
+                                <option value="BCP">BCP</option>
+                                <option value="SCOTIABANK">SCOTIABANK</option>
+                                <option value="FINANCIERO">FINANCIERO</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="periodoInput">Periodo (Mes/Año)</label>
+                            <input type="month" id="periodoInput" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fechaEmisionInput">Fecha de Emisión</label>
+                            <input type="date" id="fechaEmisionInput" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="planillaNroInput">N° Planilla Inicial</label>
+                            <input type="number" id="planillaNroInput" min="1" value="1" required>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-section">
+                    <div class="section-header">
+                        <h2>Desplazamientos y Pasajes</h2>
+                        <button type="button" id="btnRestablecer" class="btn btn-secondary">Restablecer Predeterminados</button>
+                    </div>
+                    
+                    <p class="help-text">Modifica las rutas o montos si tuviste cambios respecto a tu ruta predeterminada.</p>
+
+                    <div class="table-responsive">
+                        <table class="calendar-table" id="calendarTable">
+                            <thead>
+                                <tr>
+                                    <th>Día</th>
+                                    <th>Fecha / Día de Semana</th>
+                                    <th>Motivo</th>
+                                    <th>Destino / Ruta</th>
+                                    <th>Viaje (Lugar)</th>
+                                    <th>Monto (S/.)</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendarBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">Seleccione un Vendedor y Periodo para cargar sus rutas...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="form-actions mt-4">
+                        <button type="button" id="btnAgregarFila" class="btn btn-secondary">➕ Agregar Fila de Viaje</button>
+                        <div class="total-display">
+                            <span>TOTAL MOVILIDAD:</span>
+                            <span class="monto-total" id="montoTotalVal">S/. 0.00</span>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="submit-container">
+                    <button type="submit" class="btn btn-primary btn-large">📥 Descargar Mi Planilla de Movilidad</button>
+                </div>
+            </form>
+        </main>
+
+        <footer class="app-footer">
+            <p>&copy; 2026 Corporación de Alimentos S.A.C. - Sistema de Movilidad de Fuerza de Ventas</p>
+        </footer>
+    </div>
+
+    <!-- Alert Modal for custom messages -->
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <p id="modalMessage"></p>
+        </div>
+    </div>
+    
+    <script src="/static/app.js"></script>
+</body>
+</html>
