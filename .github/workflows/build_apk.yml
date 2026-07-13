@@ -48,6 +48,7 @@ jobs:
             --project PlanillaMovilidad \
             --description "Generador de Planillas de Movilidad" \
             --org com.corporacion.planilla \
+            --yes \
             -vv
 
       # 7. Subir el APK como artefacto descargable
