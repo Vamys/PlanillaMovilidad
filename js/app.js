@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // --- LOAD VENDORS ---
     const selectTrabajador = document.getElementById('nombreTrabajador');
+    const inputNuevoTrabajador = document.getElementById('inputNuevoTrabajador');
     const inputDni = document.getElementById('dniTrabajador');
     const selectBanco = document.getElementById('bancoTrabajador');
     
@@ -32,37 +33,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const vendor = e.target.value;
         
         if (vendor === "NUEVO") {
-            const { value: newVendorName } = await Swal.fire({
-                title: 'Nuevo Vendedor',
-                input: 'text',
-                inputLabel: 'Ingrese el nombre completo',
-                inputPlaceholder: 'Ej. Juan Pérez',
-                showCancelButton: true,
-                background: '#1e293b',
-                color: '#fff',
-                inputValidator: (value) => {
-                    if (!value) return '¡Necesita escribir un nombre!';
-                }
-            });
-
-            if (newVendorName) {
-                const upperName = newVendorName.trim().toUpperCase();
-                // Check if already exists
-                let exists = Array.from(selectTrabajador.options).some(opt => opt.value === upperName);
-                if (!exists) {
-                    const opt = document.createElement('option');
-                    opt.value = upperName;
-                    opt.textContent = upperName;
-                    selectTrabajador.appendChild(opt);
-                }
-                selectTrabajador.value = upperName;
-                inputDni.value = "";
-                selectBanco.value = "";
-            } else {
-                selectTrabajador.value = ""; // Cancelled
-            }
+            inputNuevoTrabajador.classList.remove('d-none');
+            inputNuevoTrabajador.focus();
+            inputDni.value = "";
+            selectBanco.value = "";
             return;
         }
+
+        inputNuevoTrabajador.classList.add('d-none');
 
         if (vendor && vendorsDniData[vendor]) {
             const data = vendorsDniData[vendor];
@@ -130,7 +108,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     btnGenerarExcel.addEventListener('click', async () => {
-        const nombre = selectTrabajador.value.trim();
+        let nombre = selectTrabajador.value;
+        if (nombre === "NUEVO") {
+            nombre = inputNuevoTrabajador.value.trim();
+        }
+        
         const banco = selectBanco.value;
         const dni = inputDni.value;
         const periodoStr = document.getElementById('periodoTrabajador').value;
