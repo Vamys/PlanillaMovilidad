@@ -49,14 +49,14 @@
                         <div class="row g-3 mt-2">
                             <div class="col-md-3">
                                 <label class="form-label text-uppercase text-muted-light small fw-bold">Vendedor / Trabajador</label>
-                                <select id="nombreTrabajador" class="form-select dark-input">
-                                    <option value="">-- Seleccione un Vendedor --</option>
+                                <input type="text" id="nombreTrabajador" list="vendorsList" class="form-control dark-input" placeholder="Escriba o seleccione..." autocomplete="off">
+                                <datalist id="vendorsList">
                                     <!-- Options filled by JS -->
-                                </select>
+                                </datalist>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label text-uppercase text-muted-light small fw-bold">D.N.I. Del Trabajador</label>
-                                <input type="text" id="dniTrabajador" class="form-control dark-input" placeholder="8 dígitos" readonly>
+                                <input type="text" id="dniTrabajador" class="form-control dark-input" placeholder="8 dígitos">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label text-uppercase text-muted-light small fw-bold">Banco</label>

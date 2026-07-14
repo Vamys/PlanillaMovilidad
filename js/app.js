@@ -10,9 +10,10 @@ let vendorsDniData = {};
 document.addEventListener('DOMContentLoaded', async () => {
     
     // --- LOAD VENDORS ---
-    const selectTrabajador = document.getElementById('nombreTrabajador');
+    const inputTrabajador = document.getElementById('nombreTrabajador');
     const inputDni = document.getElementById('dniTrabajador');
     const selectBanco = document.getElementById('bancoTrabajador');
+    const datalist = document.getElementById('vendorsList');
     
     try {
         const res = await fetch(VENDORS_DNI_FILE);
@@ -21,42 +22,62 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.keys(vendorsDniData).forEach(vendor => {
             const opt = document.createElement('option');
             opt.value = vendor;
-            opt.textContent = vendor;
-            selectTrabajador.appendChild(opt);
+            datalist.appendChild(opt);
         });
     } catch (e) {
         console.warn("No se pudo cargar vendors_dni.json", e);
     }
 
-    selectTrabajador.addEventListener('change', (e) => {
-        const vendor = e.target.value;
+    inputTrabajador.addEventListener('input', (e) => {
+        const vendor = e.target.value.toUpperCase();
         if (vendor && vendorsDniData[vendor]) {
             const data = vendorsDniData[vendor];
             inputDni.value = typeof data === 'string' ? data : (data.dni || "");
             if (typeof data === 'object' && data.banco) {
                 selectBanco.value = data.banco;
-            } else {
-                selectBanco.value = "";
             }
-            // Remove empty message if exists
-            const emptyMsg = document.getElementById('emptyRowMessage');
-            if (emptyMsg) emptyMsg.remove();
-        } else {
-            inputDni.value = "";
-            selectBanco.value = "";
         }
     });
 
     // Default dates
     const today = new Date();
     document.getElementById('fechaEmision').value = today.toISOString().split('T')[0];
-    document.getElementById('periodoTrabajador').value = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    // Periodo vacío por defecto para forzar selección
+    const inputPeriodo = document.getElementById('periodoTrabajador');
+    inputPeriodo.value = "";
 
     // --- VENDEDOR TAB ---
     const btnAgregarFila = document.getElementById('btnAgregarFila');
     const btnRestablecer = document.getElementById('btnRestablecer');
     const recorridosTable = document.getElementById('recorridosTable').getElementsByTagName('tbody')[0];
     const btnGenerarExcel = document.getElementById('btnGenerarExcel');
+    
+    // Auto-generar días cuando cambia el periodo
+    inputPeriodo.addEventListener('change', (e) => {
+        const pVal = e.target.value;
+        if (!pVal) return;
+        
+        const emptyMsg = document.getElementById('emptyRowMessage');
+        if (emptyMsg) emptyMsg.remove();
+        
+        // Limpiar tabla actual
+        recorridosTable.innerHTML = '';
+        
+        const [yyyy, mm] = pVal.split('-');
+        const year = parseInt(yyyy);
+        const month = parseInt(mm) - 1; // 0-indexed
+        
+        // Días del mes
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        for (let i = 1; i <= daysInMonth; i++) {
+            const currentDate = new Date(year, month, i);
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+            
+            // Omitir domingos por defecto? O los mostramos todos. Vamos a mostrarlos todos.
+            agregarFilaEspecifica(recorridosTable, i, dateStr);
+        }
+    });
     
     btnAgregarFila.addEventListener('click', () => {
         const emptyMsg = document.getElementById('emptyRowMessage');
@@ -70,7 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     btnGenerarExcel.addEventListener('click', async () => {
-        const nombre = selectTrabajador.value;
+        const nombre = inputTrabajador.value.trim();
         const banco = selectBanco.value;
         const dni = inputDni.value;
         const periodoStr = document.getElementById('periodoTrabajador').value;
@@ -110,7 +131,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Fill rows (starting at row 18)
             for (let i = 0; i < filas.length; i++) {
-                if (i > 13) break; // Max 14 rows in template
                 const rowObj = filas[i];
                 let d, m, y;
                 if (rowObj.fecha) {
@@ -376,13 +396,18 @@ async function fetchFile(url) {
 }
 
 function agregarFila(tbody) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const d = new Date().getDate();
+    agregarFilaEspecifica(tbody, d, todayStr);
+}
+
+function agregarFilaEspecifica(tbody, diaNum, fechaStr) {
     const tr = document.createElement('tr');
-    const today = new Date().toISOString().split('T')[0];
     
     // Columns: DÍA (num), FECHA / DÍA SEMANA, MOTIVO, DESTINO/RUTA, VIAJE(LUGAR), MONTO, ACCIÓN
     tr.innerHTML = `
-        <td style="width: 70px;"><input type="number" class="form-control dark-input d-dia" min="1" max="31" value="${new Date().getDate()}"></td>
-        <td><input type="date" class="form-control dark-input d-fecha" value="${today}"></td>
+        <td style="width: 70px;"><input type="number" class="form-control dark-input d-dia" min="1" max="31" value="${diaNum}"></td>
+        <td><input type="date" class="form-control dark-input d-fecha" value="${fechaStr}"></td>
         <td><input type="text" class="form-control dark-input d-motivo" placeholder="Visita / G. Admin"></td>
         <td><input type="text" class="form-control dark-input d-ruta" placeholder="Destino / Ruta" required></td>
         <td><input type="text" class="form-control dark-input d-lugar" placeholder="Viaje (Lugar)"></td>
