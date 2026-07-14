@@ -49,10 +49,11 @@
                         <div class="row g-3 mt-2">
                             <div class="col-md-3">
                                 <label class="form-label text-uppercase text-muted-light small fw-bold">Vendedor / Trabajador</label>
-                                <input type="text" id="nombreTrabajador" list="vendorsList" class="form-control dark-input" placeholder="Escriba o seleccione..." autocomplete="off">
-                                <datalist id="vendorsList">
+                                <select id="nombreTrabajador" class="form-select dark-input">
+                                    <option value="">-- Seleccione un Vendedor --</option>
+                                    <option value="NUEVO" class="text-success fw-bold">+ Agregar Nuevo Vendedor...</option>
                                     <!-- Options filled by JS -->
-                                </datalist>
+                                </select>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label text-uppercase text-muted-light small fw-bold">D.N.I. Del Trabajador</label>

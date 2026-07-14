@@ -10,10 +10,9 @@ let vendorsDniData = {};
 document.addEventListener('DOMContentLoaded', async () => {
     
     // --- LOAD VENDORS ---
-    const inputTrabajador = document.getElementById('nombreTrabajador');
+    const selectTrabajador = document.getElementById('nombreTrabajador');
     const inputDni = document.getElementById('dniTrabajador');
     const selectBanco = document.getElementById('bancoTrabajador');
-    const datalist = document.getElementById('vendorsList');
     
     try {
         const res = await fetch(VENDORS_DNI_FILE);
@@ -22,20 +21,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.keys(vendorsDniData).forEach(vendor => {
             const opt = document.createElement('option');
             opt.value = vendor;
-            datalist.appendChild(opt);
+            opt.textContent = vendor;
+            selectTrabajador.appendChild(opt);
         });
     } catch (e) {
         console.warn("No se pudo cargar vendors_dni.json", e);
     }
 
-    inputTrabajador.addEventListener('input', (e) => {
-        const vendor = e.target.value.toUpperCase();
+    selectTrabajador.addEventListener('change', async (e) => {
+        const vendor = e.target.value;
+        
+        if (vendor === "NUEVO") {
+            const { value: newVendorName } = await Swal.fire({
+                title: 'Nuevo Vendedor',
+                input: 'text',
+                inputLabel: 'Ingrese el nombre completo',
+                inputPlaceholder: 'Ej. Juan Pérez',
+                showCancelButton: true,
+                background: '#1e293b',
+                color: '#fff',
+                inputValidator: (value) => {
+                    if (!value) return '¡Necesita escribir un nombre!';
+                }
+            });
+
+            if (newVendorName) {
+                const upperName = newVendorName.trim().toUpperCase();
+                // Check if already exists
+                let exists = Array.from(selectTrabajador.options).some(opt => opt.value === upperName);
+                if (!exists) {
+                    const opt = document.createElement('option');
+                    opt.value = upperName;
+                    opt.textContent = upperName;
+                    selectTrabajador.appendChild(opt);
+                }
+                selectTrabajador.value = upperName;
+                inputDni.value = "";
+                selectBanco.value = "";
+            } else {
+                selectTrabajador.value = ""; // Cancelled
+            }
+            return;
+        }
+
         if (vendor && vendorsDniData[vendor]) {
             const data = vendorsDniData[vendor];
             inputDni.value = typeof data === 'string' ? data : (data.dni || "");
             if (typeof data === 'object' && data.banco) {
                 selectBanco.value = data.banco;
+            } else {
+                selectBanco.value = "";
             }
+        } else {
+            inputDni.value = "";
+            selectBanco.value = "";
         }
     });
 
@@ -91,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     btnGenerarExcel.addEventListener('click', async () => {
-        const nombre = inputTrabajador.value.trim();
+        const nombre = selectTrabajador.value.trim();
         const banco = selectBanco.value;
         const dni = inputDni.value;
         const periodoStr = document.getElementById('periodoTrabajador').value;
