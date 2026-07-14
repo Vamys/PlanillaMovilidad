@@ -1,40 +1,178 @@
-body {
+:root {
+    --bg-dark: #121420; /* Dark navy background */
+    --card-dark: #1a1e2f;
+    --text-white: #f8fafc;
+    --text-muted: #94a3b8;
+    --primary-accent: #6366f1; /* Purple/Blue button */
+    --primary-hover: #4f46e5;
+    --border-color: #2d3748;
+    --input-bg: #121420;
+    --table-header: #121420;
+    --table-border: #2d3748;
+    --danger: #ef4444;
+}
+
+body.dark-theme {
+    background-color: var(--bg-dark);
+    color: var(--text-white);
     font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: #f8f9fa;
 }
 
-.border-dashed {
-    border-style: dashed !important;
+/* Cards */
+.dark-card {
+    background-color: var(--card-dark);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-#dropArea {
-    transition: all 0.3s ease;
+.text-muted-light {
+    color: var(--text-muted) !important;
+}
+
+/* Section Title with left border */
+.section-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.section-title h4, .section-title h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-white);
+    border-left: 4px solid var(--primary-accent);
+    padding-left: 12px;
+}
+.section-title.justify-content-center h3 {
+    border-left: none;
+    padding-left: 0;
+}
+
+/* Tabs Toggle */
+.custom-tabs {
+    background-color: var(--bg-dark);
+    border-radius: 8px;
+    padding: 4px;
+}
+.custom-tabs .tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 8px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.custom-tabs .tab-btn.active {
+    background-color: var(--primary-accent);
+    color: white;
+}
+.custom-tabs .tab-btn:hover:not(.active) {
+    color: var(--text-white);
+}
+
+/* Form Controls */
+.dark-input {
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-white);
+    border-radius: 6px;
+}
+.dark-input:focus {
+    background-color: var(--input-bg);
+    border-color: var(--primary-accent);
+    color: var(--text-white);
+    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
+}
+.dark-input::placeholder {
+    color: #64748b;
+}
+
+/* Buttons */
+.btn-primary-accent {
+    background-color: var(--primary-accent);
+    color: white;
+    border: none;
+}
+.btn-primary-accent:hover {
+    background-color: var(--primary-hover);
+    color: white;
+}
+.btn-outline-light {
+    border-color: var(--border-color);
+    color: var(--text-white);
+}
+.btn-outline-light:hover {
+    background-color: var(--border-color);
+    color: white;
+}
+.btn-dark-accent {
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    color: var(--text-white);
+}
+.btn-dark-accent:hover {
+    background-color: #2d3748;
+    color: white;
+}
+
+/* Table */
+.dark-table {
+    color: var(--text-white);
+    border-color: var(--table-border);
+    margin-bottom: 0;
+}
+.dark-table thead th {
+    background-color: var(--table-header);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    border-bottom: 1px solid var(--table-border);
+    border-top: none;
+    padding: 12px 16px;
+}
+.dark-table tbody td {
+    background-color: var(--card-dark);
+    border-bottom: 1px solid var(--table-border);
+    padding: 8px 16px;
+}
+.dark-table tbody tr:hover td {
+    background-color: #242b42;
+}
+.dark-table .form-control {
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    color: white;
+}
+.dark-table .form-control:focus {
+    border-color: var(--primary-accent);
+}
+
+/* Total Box */
+.total-box {
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 24px;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Upload Area */
+.upload-area {
+    background-color: var(--bg-dark);
+    border: 2px dashed var(--border-color);
+    transition: all 0.2s ease;
     cursor: pointer;
 }
-
-#dropArea:hover {
-    background-color: #e9ecef !important;
-    border-color: #0d6efd !important;
+.upload-area:hover {
+    border-color: var(--primary-accent);
+}
+.bg-darker {
+    background-color: var(--bg-dark) !important;
 }
 
-.table-hover tbody tr:hover {
-    background-color: #f1f8ff;
-}
-
-.nav-tabs .nav-link {
-    color: #495057;
-    border-radius: 0.5rem 0.5rem 0 0;
-}
-
-.nav-tabs .nav-link.active {
-    color: #0d6efd;
-    border-bottom: 3px solid #0d6efd;
-}
-
-.card {
-    border-radius: 0.5rem;
-}
-
+/* Hide number arrows */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;

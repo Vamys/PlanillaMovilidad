@@ -13,116 +13,157 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="bg-light">
+<body class="dark-theme">
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="#">
-                <i class="fa-solid fa-car"></i> Planilla de Movilidad
-            </a>
+    <div class="container mt-4 mb-5">
+        
+        <!-- Header Card -->
+        <div class="card dark-card mb-4 border-0">
+            <div class="card-body text-center p-4">
+                <h2 class="text-white fw-bold mb-1">
+                    <span style="color: #fca5a5;">🚗</span> Planilla de Movilidad
+                </h2>
+                <p class="text-secondary-light mb-4">Fuerza de Ventas - Corporación de Alimentos S.A.C.</p>
+                
+                <!-- Custom Toggle Tabs -->
+                <div class="d-inline-flex custom-tabs" role="tablist">
+                    <button class="tab-btn active" id="vendedor-tab" data-bs-toggle="tab" data-bs-target="#vendedor" type="button" role="tab">Vendedor</button>
+                    <button class="tab-btn" id="rrhh-tab" data-bs-toggle="tab" data-bs-target="#rrhh" type="button" role="tab">Panel RRHH</button>
+                </div>
+            </div>
         </div>
-    </nav>
-
-    <div class="container mt-4">
-        <!-- Tabs -->
-        <ul class="nav nav-tabs mb-4 shadow-sm bg-white rounded-top" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active fw-bold px-4 py-3" id="vendedor-tab" data-bs-toggle="tab" data-bs-target="#vendedor" type="button" role="tab">
-                    <i class="fa-solid fa-user-pen"></i> Generar Planilla
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link fw-bold px-4 py-3" id="rrhh-tab" data-bs-toggle="tab" data-bs-target="#rrhh" type="button" role="tab">
-                    <i class="fa-solid fa-sitemap"></i> Consolidar (RRHH)
-                </button>
-            </li>
-        </ul>
 
         <!-- Tab Content -->
         <div class="tab-content" id="myTabContent">
             
             <!-- VENDEDOR TAB -->
             <div class="tab-pane fade show active" id="vendedor" role="tabpanel">
-                <div class="card shadow-sm border-0 mb-4">
+                
+                <!-- Datos Generales -->
+                <div class="card dark-card mb-4 border-0">
                     <div class="card-body p-4">
-                        <h4 class="card-title text-primary mb-4"><i class="fa-solid fa-file-invoice"></i> Datos del Vendedor</h4>
-                        <div class="row mb-3">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Nombre Completo</label>
-                                <input type="text" id="nombreTrabajador" class="form-control form-control-lg" placeholder="Ej. Juan Pérez">
+                        <div class="section-title">
+                            <h4>Datos Generales</h4>
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase text-muted-light small fw-bold">Vendedor / Trabajador</label>
+                                <select id="nombreTrabajador" class="form-select dark-input">
+                                    <option value="">-- Seleccione un Vendedor --</option>
+                                    <!-- Options filled by JS -->
+                                </select>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Banco</label>
-                                <select id="bancoTrabajador" class="form-select form-control-lg">
+                            <div class="col-md-3">
+                                <label class="form-label text-uppercase text-muted-light small fw-bold">D.N.I. Del Trabajador</label>
+                                <input type="text" id="dniTrabajador" class="form-control dark-input" placeholder="8 dígitos" readonly>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-uppercase text-muted-light small fw-bold">Banco</label>
+                                <select id="bancoTrabajador" class="form-select dark-input">
+                                    <option value="">-- Banco --</option>
                                     <option value="BCP">BCP</option>
                                     <option value="BBVA">BBVA</option>
                                     <option value="SCOTIABANK">SCOTIABANK</option>
                                     <option value="INTERBANK">INTERBANK</option>
                                     <option value="PICHINCHA">PICHINCHA</option>
+                                    <option value="BANBIF">BANBIF</option>
                                 </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-uppercase text-muted-light small fw-bold">Periodo (Mes/Año)</label>
+                                <input type="month" id="periodoTrabajador" class="form-control dark-input">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-uppercase text-muted-light small fw-bold">Fecha de Emisión</label>
+                                <input type="date" id="fechaEmision" class="form-control dark-input">
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-2">
+                                <label class="form-label text-uppercase text-muted-light small fw-bold">N° Planilla Inicial</label>
+                                <input type="number" id="nroPlanilla" class="form-control dark-input" value="1" min="1">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card shadow-sm border-0 mb-4">
+                <!-- Desplazamientos y Pasajes -->
+                <div class="card dark-card mb-4 border-0">
                     <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h4 class="card-title text-primary m-0"><i class="fa-solid fa-route"></i> Recorridos Diarios</h4>
-                            <button class="btn btn-outline-primary btn-sm" id="btnAgregarFila">
-                                <i class="fa-solid fa-plus"></i> Agregar Fila
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div class="section-title mb-0">
+                                <h4 class="mb-0">Desplazamientos y Pasajes</h4>
+                            </div>
+                            <button class="btn btn-outline-light btn-sm" id="btnRestablecer" style="border-radius: 6px;">
+                                Restablecer Predeterminados
                             </button>
                         </div>
+                        <p class="text-muted-light small mb-4 mt-2">Modifica las rutas o montos si tuviste cambios respecto a tu ruta predeterminada.</p>
                         
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle" id="recorridosTable">
-                                <thead class="table-light">
+                            <table class="table dark-table align-middle" id="recorridosTable">
+                                <thead>
                                     <tr>
-                                        <th>Fecha</th>
-                                        <th>Ruta (Ej. Lima - Miraflores)</th>
-                                        <th>Lugar (Ej. Oficina Cliente)</th>
-                                        <th style="width: 120px;">Monto (S/)</th>
-                                        <th style="width: 50px;"></th>
+                                        <th>DÍA</th>
+                                        <th>FECHA / DÍA DE SEMANA</th>
+                                        <th>MOTIVO</th>
+                                        <th>DESTINO / RUTA</th>
+                                        <th>VIAJE (LUGAR)</th>
+                                        <th style="width: 120px;">MONTO (S/.)</th>
+                                        <th style="width: 80px;" class="text-center">ACCIÓN</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Las filas se insertarán dinámicamente -->
+                                    <tr id="emptyRowMessage">
+                                        <td colspan="7" class="text-center text-muted-light py-3">
+                                            Seleccione un Vendedor y Periodo para cargar sus rutas...
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                         
-                        <div class="d-flex justify-content-end mt-4">
-                            <h4 class="text-secondary me-3">Total: <span id="totalMonto" class="text-primary fw-bold">S/ 0.00</span></h4>
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <button class="btn btn-dark-accent btn-sm" id="btnAgregarFila">
+                                <i class="fa-solid fa-plus"></i> Agregar Fila de Viaje
+                            </button>
+                            <div class="total-box">
+                                <span class="text-muted-light me-2 text-uppercase small">Total Movilidad:</span> 
+                                <span id="totalMonto" class="fw-bold fs-4 text-white">S/. 0.00</span>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="d-grid gap-2 mb-5">
-                    <button class="btn btn-primary btn-lg py-3 fw-bold" id="btnGenerarExcel">
-                        <i class="fa-solid fa-download"></i> Descargar Planilla Excel
+                <div class="text-center mt-5 mb-5">
+                    <button class="btn btn-primary-accent btn-lg fw-bold px-5 py-3" id="btnGenerarExcel" style="border-radius: 8px;">
+                        <i class="fa-solid fa-download"></i> Descargar Mi Planilla de Movilidad
                     </button>
                 </div>
             </div>
 
             <!-- RRHH TAB -->
             <div class="tab-pane fade" id="rrhh" role="tabpanel">
-                <div class="card shadow-sm border-0">
+                <div class="card dark-card border-0 mb-4">
                     <div class="card-body p-5 text-center">
-                        <h3 class="text-primary mb-3"><i class="fa-solid fa-layer-group"></i> Consolidar Planillas Individuales</h3>
-                        <p class="text-muted mb-4">Seleccione todos los archivos de Excel (generados por los vendedores) que desea consolidar en el archivo maestro.</p>
+                        <div class="section-title justify-content-center mb-4">
+                            <h3 class="mb-0 text-white">Consolidar Planillas Individuales</h3>
+                        </div>
+                        <p class="text-muted-light mb-4">Seleccione todos los archivos de Excel (generados por los vendedores) que desea consolidar en el archivo maestro.</p>
                         
-                        <div class="mb-4 p-4 border border-2 border-dashed rounded bg-light" id="dropArea">
-                            <i class="fa-solid fa-cloud-arrow-up fa-3x text-secondary mb-3"></i>
-                            <h5>Arrastre los archivos aquí o haga clic para seleccionar</h5>
+                        <div class="upload-area mb-4 p-5 rounded" id="dropArea">
+                            <i class="fa-solid fa-cloud-arrow-up fa-3x text-muted-light mb-3"></i>
+                            <h5 class="text-white">Arrastre los archivos aquí o haga clic para seleccionar</h5>
                             <input type="file" id="fileArchivosVendedores" class="form-control d-none" multiple accept=".xlsx">
-                            <button class="btn btn-outline-secondary mt-2" onclick="document.getElementById('fileArchivosVendedores').click()">Examinar Archivos</button>
+                            <button class="btn btn-dark-accent mt-3" onclick="document.getElementById('fileArchivosVendedores').click()">Examinar Archivos</button>
                         </div>
                         
                         <div id="fileList" class="mb-4 text-start"></div>
 
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-success btn-lg py-3 fw-bold" id="btnConsolidar">
+                        <div class="d-grid gap-2 max-w-500 mx-auto">
+                            <button class="btn btn-primary-accent btn-lg py-3 fw-bold" id="btnConsolidar">
                                 <i class="fa-solid fa-file-excel"></i> Generar Consolidado Maestro
                             </button>
                         </div>
@@ -130,12 +171,12 @@
                 </div>
                 
                 <!-- Log Console for RRHH -->
-                <div class="card shadow-sm border-0 mt-4 d-none" id="logCard">
-                    <div class="card-header bg-dark text-white fw-bold">
+                <div class="card dark-card border-0 mt-4 d-none" id="logCard">
+                    <div class="card-header bg-darker text-white fw-bold border-0">
                         <i class="fa-solid fa-terminal"></i> Resultados de Consolidación
                     </div>
-                    <div class="card-body bg-light p-0">
-                        <pre id="logConsole" class="m-0 p-3" style="max-height: 250px; overflow-y: auto; font-size: 0.9em;"></pre>
+                    <div class="card-body p-0">
+                        <pre id="logConsole" class="m-0 p-3 text-success bg-darker" style="max-height: 250px; overflow-y: auto; font-size: 0.9em;"></pre>
                     </div>
                 </div>
             </div>
@@ -144,15 +185,10 @@
     </div>
 
     <!-- Scripts -->
-    <!-- ExcelJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-    <!-- FileSaver -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- App Logic -->
     <script src="js/app.js"></script>
 </body>
 </html>
