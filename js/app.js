@@ -263,10 +263,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (val && String(val).trim().toUpperCase() === 'TOTAL') totalRow = rowNumber;
                     });
                     if (totalRow && totalRow > 3) {
-                        const merges = Object.values(sheet._merges);
-                        merges.forEach(merge => {
-                            if (merge.top >= 3 && merge.bottom < totalRow) sheet.unMergeCells(merge.model.model);
-                        });
+                        if (sheet._merges) {
+                            for (let range in sheet._merges) {
+                                const mergeObj = sheet._merges[range];
+                                if (!mergeObj || !mergeObj.model) continue;
+                                if (mergeObj.model.top >= 3 && mergeObj.model.bottom < totalRow) {
+                                    sheet.unMergeCells(range);
+                                }
+                            }
+                        }
                         sheet.spliceRows(3, totalRow - 3);
                     }
                 }
