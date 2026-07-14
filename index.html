@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planilla de Movilidad</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-light">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fa-solid fa-car"></i> Planilla de Movilidad
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-4 shadow-sm bg-white rounded-top" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active fw-bold px-4 py-3" id="vendedor-tab" data-bs-toggle="tab" data-bs-target="#vendedor" type="button" role="tab">
+                    <i class="fa-solid fa-user-pen"></i> Generar Planilla
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link fw-bold px-4 py-3" id="rrhh-tab" data-bs-toggle="tab" data-bs-target="#rrhh" type="button" role="tab">
+                    <i class="fa-solid fa-sitemap"></i> Consolidar (RRHH)
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="myTabContent">
+            
+            <!-- VENDEDOR TAB -->
+            <div class="tab-pane fade show active" id="vendedor" role="tabpanel">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <h4 class="card-title text-primary mb-4"><i class="fa-solid fa-file-invoice"></i> Datos del Vendedor</h4>
+                        <div class="row mb-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Nombre Completo</label>
+                                <input type="text" id="nombreTrabajador" class="form-control form-control-lg" placeholder="Ej. Juan Pérez">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Banco</label>
+                                <select id="bancoTrabajador" class="form-select form-control-lg">
+                                    <option value="BCP">BCP</option>
+                                    <option value="BBVA">BBVA</option>
+                                    <option value="SCOTIABANK">SCOTIABANK</option>
+                                    <option value="INTERBANK">INTERBANK</option>
+                                    <option value="PICHINCHA">PICHINCHA</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="card-title text-primary m-0"><i class="fa-solid fa-route"></i> Recorridos Diarios</h4>
+                            <button class="btn btn-outline-primary btn-sm" id="btnAgregarFila">
+                                <i class="fa-solid fa-plus"></i> Agregar Fila
+                            </button>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle" id="recorridosTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Ruta (Ej. Lima - Miraflores)</th>
+                                        <th>Lugar (Ej. Oficina Cliente)</th>
+                                        <th style="width: 120px;">Monto (S/)</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Las filas se insertarán dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end mt-4">
+                            <h4 class="text-secondary me-3">Total: <span id="totalMonto" class="text-primary fw-bold">S/ 0.00</span></h4>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 mb-5">
+                    <button class="btn btn-primary btn-lg py-3 fw-bold" id="btnGenerarExcel">
+                        <i class="fa-solid fa-download"></i> Descargar Planilla Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- RRHH TAB -->
+            <div class="tab-pane fade" id="rrhh" role="tabpanel">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-5 text-center">
+                        <h3 class="text-primary mb-3"><i class="fa-solid fa-layer-group"></i> Consolidar Planillas Individuales</h3>
+                        <p class="text-muted mb-4">Seleccione todos los archivos de Excel (generados por los vendedores) que desea consolidar en el archivo maestro.</p>
+                        
+                        <div class="mb-4 p-4 border border-2 border-dashed rounded bg-light" id="dropArea">
+                            <i class="fa-solid fa-cloud-arrow-up fa-3x text-secondary mb-3"></i>
+                            <h5>Arrastre los archivos aquí o haga clic para seleccionar</h5>
+                            <input type="file" id="fileArchivosVendedores" class="form-control d-none" multiple accept=".xlsx">
+                            <button class="btn btn-outline-secondary mt-2" onclick="document.getElementById('fileArchivosVendedores').click()">Examinar Archivos</button>
+                        </div>
+                        
+                        <div id="fileList" class="mb-4 text-start"></div>
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success btn-lg py-3 fw-bold" id="btnConsolidar">
+                                <i class="fa-solid fa-file-excel"></i> Generar Consolidado Maestro
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Log Console for RRHH -->
+                <div class="card shadow-sm border-0 mt-4 d-none" id="logCard">
+                    <div class="card-header bg-dark text-white fw-bold">
+                        <i class="fa-solid fa-terminal"></i> Resultados de Consolidación
+                    </div>
+                    <div class="card-body bg-light p-0">
+                        <pre id="logConsole" class="m-0 p-3" style="max-height: 250px; overflow-y: auto; font-size: 0.9em;"></pre>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- ExcelJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <!-- FileSaver -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- App Logic -->
+    <script src="js/app.js"></script>
+</body>
+</html>
