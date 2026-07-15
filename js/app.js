@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             for (let range in sheet._merges) {
                                 const mergeObj = sheet._merges[range];
                                 if (!mergeObj || !mergeObj.model) continue;
-                                if (mergeObj.model.top >= 3 && mergeObj.model.bottom < totalRow) {
+                                if (mergeObj.model.top >= 3) {
                                     sheet.unMergeCells(range);
                                 }
                             }
