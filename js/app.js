@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (!bancoName || !BANCOS_VALIDOS.includes(bancoName)) { log(`❌ Ignorado: '${file.name}', banco inválido.`); continue; }
                     if (records.length === 0) { log(`⚠️ Ignorado: '${file.name}', sin rutas.`); continue; }
 
-                let sheet = masterWb.getWorksheet(bancoName);
+                let sheet = masterWb.worksheets.find(s => s.name.toUpperCase().trim() === bancoName);
                 if (!sheet) {
                     sheet = masterWb.addWorksheet(bancoName);
                     sheet.mergeCells('B1:G1');
