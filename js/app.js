@@ -124,7 +124,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const filas = getFilasData(recorridosTable);
         if (filas.length === 0) {
-            Swal.fire({icon: 'error', title: 'Atención', text: 'Debe agregar al menos un recorrido con monto', background: '#1e293b', color: '#fff'});
+            Swal.fire({icon: 'error', title: 'Atención', text: 'No hay filas en la tabla', background: '#1e293b', color: '#fff'});
+            return;
+        }
+
+        const hasMonto = filas.some(f => f.monto > 0);
+        if (!hasMonto) {
+            Swal.fire({icon: 'error', title: 'Atención', text: 'Debe agregar al menos un recorrido con monto mayor a 0', background: '#1e293b', color: '#fff'});
             return;
         }
 
@@ -134,44 +140,95 @@ document.addEventListener('DOMContentLoaded', async () => {
             const arrayBuffer = await fetchFile(TEMPLATE_VENDEDOR);
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(arrayBuffer);
-            const worksheet = workbook.getWorksheet(1);
+            const templateSheet = workbook.getWorksheet(1);
 
-            // Fill basic info
-            worksheet.getCell('F13').value = nombre.toUpperCase();
-            worksheet.getCell('F14').value = dni;
-            worksheet.getCell('K11').value = banco;
-            worksheet.getCell('G11').value = `Rendir a la cuenta: ${banco}`;
-            
-            // Periodo
             let mesNombre = MESES[new Date().getMonth()];
             if (periodoStr) {
                 const parts = periodoStr.split('-');
                 mesNombre = MESES[parseInt(parts[1]) - 1];
             }
-            worksheet.getCell('K14').value = mesNombre;
 
-            // Fill rows (starting at row 18)
-            for (let i = 0; i < filas.length; i++) {
-                const rowObj = filas[i];
-                let d, m, y;
-                if (rowObj.fecha) {
-                    const dateObj = new Date(`${rowObj.fecha}T12:00:00`);
-                    d = dateObj.getDate();
-                    m = dateObj.getMonth() + 1;
-                    y = dateObj.getFullYear();
+            const chunk_size = 14;
+            const row_chunks = [];
+            for (let i = 0; i < filas.length; i += chunk_size) {
+                row_chunks.push(filas.slice(i, i + chunk_size));
+            }
+
+            for (let p_idx = 0; p_idx < row_chunks.length; p_idx++) {
+                const chunk = row_chunks[p_idx];
+                let sheet;
+                if (p_idx === 0) {
+                    sheet = templateSheet;
+                    sheet.name = `Planilla Pg ${p_idx + 1}`;
                 } else {
-                    d = rowObj.dia_num;
-                    m = "";
-                    y = "";
+                    sheet = workbook.addWorksheet(`Planilla Pg ${p_idx + 1}`);
+                    copyWorksheet(templateSheet, sheet);
                 }
-                
-                const r = 18 + i;
-                worksheet.getCell(`A${r}`).value = d;
-                worksheet.getCell(`B${r}`).value = m;
-                worksheet.getCell(`C${r}`).value = y;
-                worksheet.getCell(`F${r}`).value = rowObj.ruta;
-                worksheet.getCell(`J${r}`).value = rowObj.lugar;
-                worksheet.getCell(`K${r}`).value = parseFloat(rowObj.monto);
+
+                // Fill basic info
+                sheet.getCell('F13').value = nombre.toUpperCase();
+                sheet.getCell('F14').value = dni;
+                sheet.getCell('K11').value = banco;
+                sheet.getCell('G11').value = `Rendir a la cuenta: ${banco}`;
+                sheet.getCell('K14').value = mesNombre;
+
+                // N° Planilla
+                const nroPlanillaNum = parseInt(document.getElementById('nroPlanilla').value) || 1;
+                sheet.getCell('K1').value = String(nroPlanillaNum + p_idx).padStart(2, '0');
+
+                // Periodo en D8
+                if (periodoStr) {
+                    const [yr, mo] = periodoStr.split('-');
+                    const pDate = new Date(yr, mo - 1, 1);
+                    const cellD8 = sheet.getCell('D8');
+                    cellD8.value = pDate;
+                    cellD8.numFmt = 'mmm-yy';
+                }
+
+                // Fecha Emisión en K5
+                const fechaEmisionStr = document.getElementById('fechaEmision').value;
+                if (fechaEmisionStr) {
+                    const [yr, mo, dy] = fechaEmisionStr.split('-');
+                    const feDate = new Date(yr, mo - 1, dy);
+                    const cellK5 = sheet.getCell('K5');
+                    cellK5.value = feDate;
+                    cellK5.numFmt = 'dd/mm/yyyy';
+                }
+
+                // Fill rows (starting at row 18)
+                for (let r_idx = 0; r_idx < chunk_size; r_idx++) {
+                    const r = 18 + r_idx;
+                    if (r_idx < chunk.length) {
+                        const rowObj = chunk[r_idx];
+                        let d = "", m = "", y = "";
+                        if (rowObj.fecha) {
+                            const dateObj = new Date(`${rowObj.fecha}T12:00:00`);
+                            d = dateObj.getDate();
+                            m = dateObj.getMonth() + 1;
+                            y = dateObj.getFullYear();
+                        } else {
+                            d = parseInt(rowObj.dia_num) || "";
+                        }
+                        
+                        sheet.getCell(`A${r}`).value = d;
+                        sheet.getCell(`B${r}`).value = m;
+                        sheet.getCell(`C${r}`).value = y;
+                        sheet.getCell(`D${r}`).value = rowObj.motivo;
+                        sheet.getCell(`F${r}`).value = rowObj.ruta;
+                        sheet.getCell(`J${r}`).value = rowObj.lugar;
+                        sheet.getCell(`K${r}`).value = rowObj.monto > 0 ? parseFloat(rowObj.monto) : null;
+                    } else {
+                        // Clear template values
+                        sheet.getCell(`A${r}`).value = null;
+                        sheet.getCell(`B${r}`).value = null;
+                        sheet.getCell(`C${r}`).value = null;
+                        sheet.getCell(`D${r}`).value = null;
+                        sheet.getCell(`F${r}`).value = null;
+                        sheet.getCell(`J${r}`).value = null;
+                        sheet.getCell(`K${r}`).value = null;
+                    }
+                }
+                sheet.getCell('K32').value = { formula: `SUM(K18:K31)` };
             }
 
             const buffer = await workbook.xlsx.writeBuffer();
@@ -264,8 +321,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
                     if (totalRow && totalRow > 3) {
                         if (sheet._merges) {
-                            for (let range in sheet._merges) {
-                                const mergeObj = sheet._merges[range];
+                            const mergesObj = sheet._merges.map || {};
+                            for (let range in mergesObj) {
+                                const mergeObj = mergesObj[range];
                                 if (!mergeObj || !mergeObj.model) continue;
                                 if (mergeObj.model.top >= 3) {
                                     sheet.unMergeCells(range);
@@ -525,15 +583,14 @@ function getFilasData(tbody) {
     trs.forEach(tr => {
         if (!tr.querySelector('.d-monto')) return; // Ignore empty message row
         const monto = parseFloat(tr.querySelector('.d-monto').value) || 0;
-        if (monto > 0) {
-            filas.push({
-                dia_num: tr.querySelector('.d-dia').value,
-                fecha: tr.querySelector('.d-fecha').value,
-                ruta: tr.querySelector('.d-ruta').value,
-                lugar: tr.querySelector('.d-lugar').value,
-                monto: monto
-            });
-        }
+        filas.push({
+            dia_num: tr.querySelector('.d-dia').value,
+            fecha: tr.querySelector('.d-fecha').value,
+            motivo: tr.querySelector('.d-motivo').value || "",
+            ruta: tr.querySelector('.d-ruta').value || "",
+            lugar: tr.querySelector('.d-lugar').value || "",
+            monto: monto
+        });
     });
     return filas;
 }
@@ -573,4 +630,53 @@ function safeInsertRows(sheet, insertRow, numRows) {
             console.warn(`Failed to re-merge shifted range ${top},${left}:${bottom},${right}`, e);
         }
     });
+}
+
+function copyWorksheet(srcSheet, destSheet) {
+    // Copy column widths
+    if (srcSheet.columns) {
+        destSheet.columns = srcSheet.columns.map(col => {
+            return {
+                key: col.key,
+                header: col.header,
+                width: col.width,
+                style: col.style,
+                hidden: col.hidden,
+                outlineLevel: col.outlineLevel
+            };
+        });
+    }
+    
+    // Copy rows and cells
+    srcSheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+        const destRow = destSheet.getRow(rowNumber);
+        destRow.height = row.height;
+        
+        row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            const destCell = destRow.getCell(colNumber);
+            destCell.value = cell.value;
+            // Copy styles
+            if (cell.font) destCell.font = Object.assign({}, cell.font);
+            if (cell.fill) destCell.fill = Object.assign({}, cell.fill);
+            if (cell.border) destCell.border = Object.assign({}, cell.border);
+            if (cell.alignment) destCell.alignment = Object.assign({}, cell.alignment);
+            if (cell.numFmt) destCell.numFmt = cell.numFmt;
+        });
+    });
+    
+    // Copy merges
+    const mergesObj = srcSheet._merges && srcSheet._merges.map ? srcSheet._merges.map : {};
+    for (let range in mergesObj) {
+        const mergeObj = mergesObj[range];
+        if (mergeObj && mergeObj.model) {
+            try {
+                destSheet.mergeCells(
+                    mergeObj.model.top,
+                    mergeObj.model.left,
+                    mergeObj.model.bottom,
+                    mergeObj.model.right
+                );
+            } catch(e) {}
+        }
+    }
 }
