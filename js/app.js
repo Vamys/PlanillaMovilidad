@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Unmerge the TOTAL row before splicing to prevent ExcelJS merge corruption/overlap
                 if (totalRow) {
                     try {
-                        sheet.unMergeCells(totalRow, 2, totalRow, 6);
+                        sheet.unMergeCells('B' + totalRow + ':F' + totalRow);
                     } catch (e) {
                         console.warn("Could not unmerge total row", e);
                     }
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 
                 // Always try to unmerge first to prevent duplicate merge errors, then merge the TOTAL row
-                try { sheet.unMergeCells(gtRow, 2, gtRow, 6); } catch(e) {}
+                try { sheet.unMergeCells('B' + gtRow + ':F' + gtRow); } catch(e) {}
                 sheet.mergeCells(gtRow, 2, gtRow, 6);
                 const cGt = sheet.getCell(gtRow, 7);
                 cGt.value = { formula: `SUM(G3:G${gtRow - 1})` };
