@@ -366,16 +366,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
                 
-                // Unmerge the TOTAL row before splicing to prevent ExcelJS merge corruption/overlap
-                if (totalRow) {
-                    try {
-                        sheet.unMergeCells('B' + totalRow + ':F' + totalRow);
-                    } catch (e) {
-                        console.warn("Could not unmerge total row", e);
-                    }
-                }
-                
-                sheet.spliceRows(insertRow, 0, ...Array(BLOCK_SIZE).fill([]));
+                // Safely insert rows by manually shifting merges to avoid ExcelJS spliceRows bugs
+                safeInsertRows(sheet, insertRow, BLOCK_SIZE);
 
                 const refBorder = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
                 const refFont = { name: 'Calibri', size: 10 };
@@ -425,9 +417,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     sheet.getCell(gtRow, 2).value = "TOTAL";
                 }
                 
-                // Always try to unmerge first to prevent duplicate merge errors, then merge the TOTAL row
-                try { sheet.unMergeCells('B' + gtRow + ':F' + gtRow); } catch(e) {}
-                sheet.mergeCells(gtRow, 2, gtRow, 6);
+                // safeInsertRows already shifted and merged the TOTAL row to the correct position (gtRow).
                 
                 // Restore TOTAL row styles and height in the new position
                 if (totalRowStyles.length > 0) {
@@ -546,4 +536,41 @@ function getFilasData(tbody) {
         }
     });
     return filas;
+}
+
+function safeInsertRows(sheet, insertRow, numRows) {
+    const originalMerges = [];
+    if (sheet._merges) {
+        for (let range in sheet._merges) {
+            const mergeObj = sheet._merges[range];
+            if (mergeObj && mergeObj.model) {
+                originalMerges.push({
+                    range: range,
+                    model: Object.assign({}, mergeObj.model)
+                });
+            }
+        }
+    }
+    
+    // Unmerge all merges using their exact range keys
+    originalMerges.forEach(m => {
+        try { sheet.unMergeCells(m.range); } catch(e) {}
+    });
+    
+    // Actually insert the rows (ExcelJS shifts cell values and single cell styles)
+    sheet.spliceRows(insertRow, 0, ...Array(numRows).fill([]));
+    
+    // Re-merge all merges, shifting those that are at or below insertRow
+    originalMerges.forEach(m => {
+        let { top, left, bottom, right } = m.model;
+        if (top >= insertRow) {
+            top += numRows;
+            bottom += numRows;
+        }
+        try {
+            sheet.mergeCells(top, left, bottom, right);
+        } catch(e) {
+            console.warn(`Failed to re-merge shifted range ${top},${left}:${bottom},${right}`, e);
+        }
+    });
 }
