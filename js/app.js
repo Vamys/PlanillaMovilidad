@@ -2,7 +2,7 @@
 const TEMPLATE_VENDEDOR = './1. Formato Planilla de movilidad - por trabajador.xlsx';
 const TEMPLATE_MAESTRO = './2. PASAJES FFVV JULIO 2026 MODELO.xlsx';
 const VENDORS_DNI_FILE = './vendors_dni.json';
-const BANCOS_VALIDOS = ['BCP', 'BBVA', 'SCOTIABANK', 'INTERBANK', 'PICHINCHA', 'BANBIF'];
+const BANCOS_VALIDOS = ['BCP', 'BBVA', 'SCOTIABANK', 'INTERBANK', 'PICHINCHA', 'BANBIF', 'FINANCIERO'];
 const MESES = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
 
 let vendorsDniData = {};
@@ -349,6 +349,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 const insertRow = totalRow ? totalRow : sheet.rowCount + 1;
                 
+                // Copy TOTAL row styles and height before splicing to preserve template formatting
+                const totalRowStyles = [];
+                let totalRowHeight = null;
+                if (totalRow) {
+                    totalRowHeight = sheet.getRow(totalRow).height;
+                    for (let col = 2; col <= 7; col++) {
+                        const cell = sheet.getCell(totalRow, col);
+                        totalRowStyles.push({
+                            font: cell.font ? Object.assign({}, cell.font) : null,
+                            fill: cell.fill ? Object.assign({}, cell.fill) : null,
+                            border: cell.border ? Object.assign({}, cell.border) : null,
+                            alignment: cell.alignment ? Object.assign({}, cell.alignment) : null,
+                            numFmt: cell.numFmt || null
+                        });
+                    }
+                }
+                
                 // Unmerge the TOTAL row before splicing to prevent ExcelJS merge corruption/overlap
                 if (totalRow) {
                     try {
@@ -411,6 +428,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Always try to unmerge first to prevent duplicate merge errors, then merge the TOTAL row
                 try { sheet.unMergeCells('B' + gtRow + ':F' + gtRow); } catch(e) {}
                 sheet.mergeCells(gtRow, 2, gtRow, 6);
+                
+                // Restore TOTAL row styles and height in the new position
+                if (totalRowStyles.length > 0) {
+                    if (totalRowHeight !== null) sheet.getRow(gtRow).height = totalRowHeight;
+                    totalRowStyles.forEach((s, idx) => {
+                        const col = 2 + idx;
+                        const cell = sheet.getCell(gtRow, col);
+                        if (s.font) cell.font = s.font;
+                        if (s.fill) cell.fill = s.fill;
+                        if (s.border) cell.border = s.border;
+                        if (s.alignment) cell.alignment = s.alignment;
+                        if (s.numFmt) cell.numFmt = s.numFmt;
+                    });
+                }
                 const cGt = sheet.getCell(gtRow, 7);
                 cGt.value = { formula: `SUM(G3:G${gtRow - 1})` };
                 cGt.font = { name: 'Calibri', size: 10, bold: true };
@@ -443,7 +474,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function fetchFile(url) {
-    const res = await fetch(url);
+    // Agregar cache-buster para evitar que el navegador cachee plantillas viejas
+    const res = await fetch(url + '?t=' + new Date().getTime());
     if (!res.ok) throw new Error(`Error descargando ${url}`);
     return await res.arrayBuffer();
 }
