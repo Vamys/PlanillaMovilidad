@@ -310,38 +310,63 @@ document.addEventListener('DOMContentLoaded', async () => {
             const masterWb = new ExcelJS.Workbook();
             await masterWb.xlsx.load(masterBuffer);
 
-            // Clean master
+            // Clean master: unmerge everything below row 2 and clear data rows from row 3
             masterWb.eachSheet((sheet) => {
                 const sheetName = sheet.name.toUpperCase();
-                if (BANCOS_VALIDOS.includes(sheetName)) {
-                    let totalRow = null;
-                    sheet.eachRow((row, rowNumber) => {
-                        const val = row.getCell(2).value;
-                        if (val && String(val).trim().toUpperCase() === 'TOTAL') totalRow = rowNumber;
-                    });
-                    if (totalRow && totalRow > 3) {
-                        if (sheet._merges) {
-                            const mergesObj = sheet._merges.map || {};
-                            for (let range in mergesObj) {
-                                const mergeObj = mergesObj[range];
-                                if (!mergeObj || !mergeObj.model) continue;
-                                if (mergeObj.model.top >= 3) {
-                                    sheet.unMergeCells(range);
-                                }
-                            }
+                if (!BANCOS_VALIDOS.includes(sheetName)) return;
+
+                // Collect all merges from the sheet safely
+                const mergeRanges = [];
+                if (sheet._merges) {
+                    // ExcelJS stores merges in _merges keyed by top-left address
+                    // The values are Range objects with .tl, .br, .model etc.
+                    Object.keys(sheet._merges).forEach(key => {
+                        const m = sheet._merges[key];
+                        // Only top-left cell has a full Range, skip secondary cells
+                        if (m && m.model && m.model.top && m.model.left &&
+                            m.model.top === m.model.top && m.model.left === m.model.left) {
+                            mergeRanges.push({
+                                key: key,
+                                top: m.model.top,
+                                left: m.model.left,
+                                bottom: m.model.bottom,
+                                right: m.model.right
+                            });
                         }
-                        sheet.spliceRows(3, totalRow - 3);
+                    });
+                }
+
+                // Unmerge those at row 3 or below
+                mergeRanges.filter(m => m.top >= 3).forEach(m => {
+                    try { sheet.unMergeCells(m.top, m.left, m.bottom, m.right); } catch(e) {}
+                });
+
+                // Clear all data rows from row 3 down (leave header rows 1+2)
+                const maxR = sheet.rowCount;
+                for (let r = maxR; r >= 3; r--) {
+                    const row = sheet.getRow(r);
+                    let hasContent = false;
+                    row.eachCell(cell => { if (cell.value !== null && cell.value !== undefined) hasContent = true; });
+                    if (hasContent) {
+                        row.eachCell(cell => { cell.value = null; });
                     }
                 }
             });
 
             let consolidatedCount = 0;
             const BLOCK_SIZE = 26;
+            // Track next write row per sheet
+            const sheetNextRow = {};
+            // Initialize with row 3 for all existing bank sheets
+            masterWb.eachSheet(sheet => {
+                if (BANCOS_VALIDOS.includes(sheet.name.toUpperCase())) {
+                    sheetNextRow[sheet.name.toUpperCase()] = 3;
+                }
+            });
 
             for (let file of uploadedFiles) {
                 try {
                     const fileBuffer = await file.arrayBuffer();
-                    // Leer con SheetJS (altamente compatible con cualquier xlsx)
                     const workerWb = XLSX.read(fileBuffer, { type: 'array' });
                     
                     let vendorName = null;
@@ -349,14 +374,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     let records = [];
 
                     for (let sheetName of workerWb.SheetNames) {
-                        if (vendorName) break;
                         const ws = workerWb.Sheets[sheetName];
                         if (!ws) continue;
 
                         const vName = ws['F13'] ? ws['F13'].v : null;
                         const vBanco = ws['K11'] ? ws['K11'].v : null;
-                        if (vName && typeof vName === 'string') vendorName = vName.trim();
-                        if (vBanco && typeof vBanco === 'string') bancoName = vBanco.trim().toUpperCase();
+                        if (vName && typeof vName === 'string' && !vendorName) vendorName = vName.trim();
+                        if (vBanco && typeof vBanco === 'string' && !bancoName) bancoName = vBanco.trim().toUpperCase();
 
                         for (let r = 18; r <= 31; r++) {
                             const cellA = ws['A' + r];
@@ -365,145 +389,120 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                             let diaSemana = "OTRO";
                             try {
-                                const cellB = ws['B' + r];
-                                const cellC = ws['C' + r];
-                                const mo = cellB ? cellB.v : 1;
-                                const yr = cellC ? cellC.v : 2026;
-                                const dateObj = new Date(yr, mo - 1, d);
+                                const mo = ws['B' + r] ? ws['B' + r].v : 1;
+                                const yr = ws['C' + r] ? ws['C' + r].v : 2026;
                                 const wmap = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
-                                diaSemana = wmap[dateObj.getDay()];
+                                diaSemana = wmap[new Date(yr, mo - 1, d).getDay()];
                             } catch(e) {}
 
                             const cellF = ws['F' + r];
                             const cellJ = ws['J' + r];
                             const cellK = ws['K' + r];
-
-                            records.push({
-                                dia_semana: diaSemana,
-                                ruta: cellF ? String(cellF.v).trim() : "",
-                                lugar: cellJ ? String(cellJ.v).trim() : "",
-                                monto: cellK ? parseFloat(cellK.v) : 0
-                            });
+                            const monto = cellK ? parseFloat(cellK.v) || 0 : 0;
+                            if (monto > 0) {
+                                records.push({
+                                    dia_semana: diaSemana,
+                                    ruta: cellF ? String(cellF.v).trim() : "",
+                                    lugar: cellJ ? String(cellJ.v).trim() : "",
+                                    monto: monto
+                                });
+                            }
                         }
                     }
 
                     if (!vendorName) { log(`❌ Ignorado: '${file.name}' sin nombre.`); continue; }
                     if (!bancoName || !BANCOS_VALIDOS.includes(bancoName)) { log(`❌ Ignorado: '${file.name}', banco inválido.`); continue; }
-                    if (records.length === 0) { log(`⚠️ Ignorado: '${file.name}', sin rutas.`); continue; }
+                    if (records.length === 0) { log(`⚠️ Ignorado: '${file.name}', sin montos.`); continue; }
 
-                let sheet = masterWb.worksheets.find(s => s.name.toUpperCase().trim() === bancoName);
-                if (!sheet) {
-                    sheet = masterWb.addWorksheet(bancoName);
-                    sheet.mergeCells('B1:G1');
-                    sheet.getCell('B1').value = `TABLA DE PASAJES - ${bancoName}`;
-                    ['VENDEDOR', 'DIA', 'RUTA', 'LUGAR', 'MONTO', 'TOTAL'].forEach((h, idx) => sheet.getCell(2, idx + 2).value = h);
-                    sheet.mergeCells('B3:F3');
-                    sheet.getCell('B3').value = 'TOTAL';
-                }
+                    let sheet = masterWb.worksheets.find(s => s.name.toUpperCase().trim() === bancoName);
+                    if (!sheet) {
+                        sheet = masterWb.addWorksheet(bancoName);
+                        ['VENDEDOR', 'DIA', 'RUTA', 'LUGAR', 'MONTO', 'TOTAL'].forEach((h, i) => sheet.getCell(2, i + 2).value = h);
+                        sheetNextRow[bancoName] = 3;
+                    }
 
-                let totalRow = null;
-                sheet.eachRow((row, rowNumber) => {
-                    if (String(row.getCell(2).value || '').trim().toUpperCase() === 'TOTAL') totalRow = rowNumber;
-                });
-                const insertRow = totalRow ? totalRow : sheet.rowCount + 1;
-                
-                // Copy TOTAL row styles and height before splicing to preserve template formatting
-                const totalRowStyles = [];
-                let totalRowHeight = null;
-                if (totalRow) {
-                    totalRowHeight = sheet.getRow(totalRow).height;
-                    for (let col = 2; col <= 7; col++) {
-                        const cell = sheet.getCell(totalRow, col);
-                        totalRowStyles.push({
-                            font: cell.font ? Object.assign({}, cell.font) : null,
-                            fill: cell.fill ? Object.assign({}, cell.fill) : null,
-                            border: cell.border ? Object.assign({}, cell.border) : null,
-                            alignment: cell.alignment ? Object.assign({}, cell.alignment) : null,
-                            numFmt: cell.numFmt || null
+                    if (!sheetNextRow[bancoName]) sheetNextRow[bancoName] = 3;
+                    const insertRow = sheetNextRow[bancoName];
+
+                    const refBorder = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                    const refFont = { name: 'Calibri', size: 10 };
+
+                    // Write vendor name cell (col B) — will merge at end
+                    const cVend = sheet.getCell(insertRow, 2);
+                    cVend.value = vendorName;
+                    cVend.font = { name: 'Calibri', size: 10, bold: true };
+                    cVend.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                    cVend.border = refBorder;
+
+                    // Write vendor total cell (col G) — will merge at end
+                    const cVendTotal = sheet.getCell(insertRow, 7);
+                    cVendTotal.font = refFont;
+                    cVendTotal.alignment = { horizontal: 'right', vertical: 'middle' };
+                    cVendTotal.numFmt = '#,##0.00';
+                    cVendTotal.border = refBorder;
+
+                    // Write data rows
+                    for (let idx = 0; idx < BLOCK_SIZE; idx++) {
+                        const curr = insertRow + idx;
+                        sheet.getCell(curr, 2).border = refBorder;
+                        sheet.getCell(curr, 7).border = refBorder;
+
+                        if (idx < records.length) {
+                            const rec = records[idx];
+                            sheet.getCell(curr, 3).value = rec.dia_semana;
+                            sheet.getCell(curr, 4).value = rec.ruta;
+                            sheet.getCell(curr, 5).value = rec.lugar;
+                            sheet.getCell(curr, 6).value = rec.monto;
+                            sheet.getCell(curr, 3).alignment = { horizontal: 'center', vertical: 'middle' };
+                            sheet.getCell(curr, 4).alignment = { horizontal: 'left', vertical: 'middle' };
+                            sheet.getCell(curr, 5).alignment = { horizontal: 'center', vertical: 'middle' };
+                            sheet.getCell(curr, 6).alignment = { horizontal: 'right', vertical: 'middle' };
+                            sheet.getCell(curr, 6).numFmt = '#,##0.00';
+                        }
+                        [3, 4, 5, 6].forEach(col => {
+                            sheet.getCell(curr, col).font = refFont;
+                            sheet.getCell(curr, col).border = refBorder;
                         });
                     }
+
+                    // Now merge vendor name and vendor total columns for the block
+                    const blockEnd = insertRow + BLOCK_SIZE - 1;
+                    try { sheet.mergeCells(insertRow, 2, blockEnd, 2); } catch(e) { console.warn('merge B', e.message); }
+                    cVendTotal.value = { formula: `SUM(F${insertRow}:F${blockEnd})` };
+                    try { sheet.mergeCells(insertRow, 7, blockEnd, 7); } catch(e) { console.warn('merge G', e.message); }
+
+                    sheetNextRow[bancoName] = blockEnd + 1;
+
+                    log(`✅ Agregado: '${vendorName}' (${records.length} rutas)`);
+                    consolidatedCount++;
+                } catch (fileErr) {
+                    console.error(`Error procesando ${file.name}:`, fileErr);
+                    log(`❌ Error leyendo '${file.name}': ${fileErr.message}`);
                 }
-                
-                // Safely insert rows by manually shifting merges to avoid ExcelJS spliceRows bugs
-                safeInsertRows(sheet, insertRow, BLOCK_SIZE);
+            }
 
-                const refBorder = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-                const refFont = { name: 'Calibri', size: 10 };
+            // Write TOTAL row at the bottom of each sheet that was written to
+            const refBorder = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            masterWb.eachSheet(sheet => {
+                const sheetNameUpper = sheet.name.toUpperCase();
+                if (!BANCOS_VALIDOS.includes(sheetNameUpper)) return;
+                if (!sheetNextRow[sheetNameUpper] || sheetNextRow[sheetNameUpper] === 3) return;
 
-                const cVend = sheet.getCell(insertRow, 2);
-                cVend.value = vendorName;
-                cVend.font = { name: 'Calibri', size: 10, bold: true };
-                cVend.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-                cVend.border = refBorder;
-                sheet.mergeCells(insertRow, 2, insertRow + BLOCK_SIZE - 1, 2);
+                const gtRow = sheetNextRow[sheetNameUpper];
+                const cGtLabel = sheet.getCell(gtRow, 2);
+                cGtLabel.value = 'TOTAL';
+                cGtLabel.font = { name: 'Calibri', size: 10, bold: true };
+                cGtLabel.alignment = { horizontal: 'center', vertical: 'middle' };
+                cGtLabel.border = refBorder;
+                try { sheet.mergeCells(gtRow, 2, gtRow, 6); } catch(e) {}
 
-                const cTotal = sheet.getCell(insertRow, 7);
-                cTotal.value = { formula: `SUM(F${insertRow}:F${insertRow + BLOCK_SIZE - 1})` };
-                cTotal.font = refFont;
-                cTotal.alignment = { horizontal: 'right', vertical: 'middle' };
-                cTotal.numFmt = '#,##0.00';
-                cTotal.border = refBorder;
-                sheet.mergeCells(insertRow, 7, insertRow + BLOCK_SIZE - 1, 7);
-
-                for (let idx = 0; idx < BLOCK_SIZE; idx++) {
-                    const curr = insertRow + idx;
-                    sheet.getCell(curr, 2).border = refBorder;
-                    sheet.getCell(curr, 7).border = refBorder;
-                    
-                    if (idx < records.length) {
-                        const rec = records[idx];
-                        sheet.getCell(curr, 3).value = rec.dia_semana;
-                        sheet.getCell(curr, 4).value = rec.ruta;
-                        sheet.getCell(curr, 5).value = rec.lugar;
-                        sheet.getCell(curr, 6).value = parseFloat(rec.monto);
-                        
-                        sheet.getCell(curr, 3).alignment = { horizontal: 'center', vertical: 'middle' };
-                        sheet.getCell(curr, 4).alignment = { horizontal: 'left', vertical: 'middle' };
-                        sheet.getCell(curr, 5).alignment = { horizontal: 'center', vertical: 'middle' };
-                        sheet.getCell(curr, 6).alignment = { horizontal: 'right', vertical: 'middle' };
-                        sheet.getCell(curr, 6).numFmt = '#,##0.00';
-                    }
-                    [3, 4, 5, 6].forEach(col => { sheet.getCell(curr, col).font = refFont; sheet.getCell(curr, col).border = refBorder; });
-                }
-
-                let gtRow = null;
-                sheet.eachRow((r, rNum) => {
-                    if (String(r.getCell(2).value || '').trim().toUpperCase() === 'TOTAL') gtRow = rNum;
-                });
-                if (!gtRow) {
-                    gtRow = sheet.rowCount + 1;
-                    sheet.getCell(gtRow, 2).value = "TOTAL";
-                }
-                
-                // safeInsertRows already shifted and merged the TOTAL row to the correct position (gtRow).
-                
-                // Restore TOTAL row styles and height in the new position
-                if (totalRowStyles.length > 0) {
-                    if (totalRowHeight !== null) sheet.getRow(gtRow).height = totalRowHeight;
-                    totalRowStyles.forEach((s, idx) => {
-                        const col = 2 + idx;
-                        const cell = sheet.getCell(gtRow, col);
-                        if (s.font) cell.font = s.font;
-                        if (s.fill) cell.fill = s.fill;
-                        if (s.border) cell.border = s.border;
-                        if (s.alignment) cell.alignment = s.alignment;
-                        if (s.numFmt) cell.numFmt = s.numFmt;
-                    });
-                }
                 const cGt = sheet.getCell(gtRow, 7);
                 cGt.value = { formula: `SUM(G3:G${gtRow - 1})` };
                 cGt.font = { name: 'Calibri', size: 10, bold: true };
                 cGt.border = refBorder;
                 cGt.alignment = { horizontal: 'right', vertical: 'middle' };
                 cGt.numFmt = '#,##0.00';
-
-                log(`✅ Agregado: '${vendorName}' (${records.length} rutas)`);
-                consolidatedCount++;
-                } catch (fileErr) {
-                    console.error(`Error procesando ${file.name}:`, fileErr);
-                    log(`❌ Error leyendo '${file.name}': ${fileErr.message}. Prueba guardarlo como .xlsx desde Excel y reintenta.`);
-                }
-            }
+            });
 
             if (consolidatedCount === 0) {
                 Swal.fire({icon: 'error', title: 'Error', text: 'No se consolidó ningún archivo válido.', background: '#1e293b', color: '#fff'});
