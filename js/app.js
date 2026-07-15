@@ -349,6 +349,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
                 const insertRow = totalRow ? totalRow : sheet.rowCount + 1;
                 
+                // Unmerge the TOTAL row before splicing to prevent ExcelJS merge corruption/overlap
+                if (totalRow) {
+                    try {
+                        sheet.unMergeCells(totalRow, 2, totalRow, 6);
+                    } catch (e) {
+                        console.warn("Could not unmerge total row", e);
+                    }
+                }
+                
                 sheet.spliceRows(insertRow, 0, ...Array(BLOCK_SIZE).fill([]));
 
                 const refBorder = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
@@ -397,8 +406,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (!gtRow) {
                     gtRow = sheet.rowCount + 1;
                     sheet.getCell(gtRow, 2).value = "TOTAL";
-                    sheet.mergeCells(gtRow, 2, gtRow, 6);
                 }
+                
+                // Always try to unmerge first to prevent duplicate merge errors, then merge the TOTAL row
+                try { sheet.unMergeCells(gtRow, 2, gtRow, 6); } catch(e) {}
+                sheet.mergeCells(gtRow, 2, gtRow, 6);
                 const cGt = sheet.getCell(gtRow, 7);
                 cGt.value = { formula: `SUM(G3:G${gtRow - 1})` };
                 cGt.font = { name: 'Calibri', size: 10, bold: true };
