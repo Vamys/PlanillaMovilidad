@@ -598,8 +598,9 @@ function getFilasData(tbody) {
 function safeInsertRows(sheet, insertRow, numRows) {
     const originalMerges = [];
     if (sheet._merges) {
-        for (let range in sheet._merges) {
-            const mergeObj = sheet._merges[range];
+        const mergesObj = sheet._merges.map || {};
+        for (let range in mergesObj) {
+            const mergeObj = mergesObj[range];
             if (mergeObj && mergeObj.model) {
                 originalMerges.push({
                     range: range,
