@@ -283,46 +283,55 @@ document.addEventListener('DOMContentLoaded', async () => {
             for (let file of uploadedFiles) {
                 try {
                     const fileBuffer = await file.arrayBuffer();
-                    const workerWb = new ExcelJS.Workbook();
-                    // Intentar cargar el archivo; algunos xlsx generan errores de ExcelJS
-                    await workerWb.xlsx.load(fileBuffer);
-                
-                let vendorName = null;
-                let bancoName = null;
-                let records = [];
+                    // Leer con SheetJS (altamente compatible con cualquier xlsx)
+                    const workerWb = XLSX.read(fileBuffer, { type: 'array' });
+                    
+                    let vendorName = null;
+                    let bancoName = null;
+                    let records = [];
 
-                workerWb.eachSheet((ws) => {
-                    if (vendorName) return; 
-                    const vName = ws.getCell('F13').value;
-                    const vBanco = ws.getCell('K11').value;
-                    if (vName && typeof vName === 'string') vendorName = vName.trim();
-                    if (vBanco && typeof vBanco === 'string') bancoName = vBanco.trim().toUpperCase();
+                    for (let sheetName of workerWb.SheetNames) {
+                        if (vendorName) break;
+                        const ws = workerWb.Sheets[sheetName];
+                        if (!ws) continue;
 
-                    for (let r = 18; r <= 31; r++) {
-                        const d = ws.getCell(`A${r}`).value;
-                        if (!d) continue;
-                        
-                        let diaSemana = "OTRO";
-                        try {
-                            const mo = ws.getCell(`B${r}`).value || 1;
-                            const yr = ws.getCell(`C${r}`).value || 2026;
-                            const dateObj = new Date(yr, mo - 1, d);
-                            const wmap = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
-                            diaSemana = wmap[dateObj.getDay()];
-                        } catch(e) {}
+                        const vName = ws['F13'] ? ws['F13'].v : null;
+                        const vBanco = ws['K11'] ? ws['K11'].v : null;
+                        if (vName && typeof vName === 'string') vendorName = vName.trim();
+                        if (vBanco && typeof vBanco === 'string') bancoName = vBanco.trim().toUpperCase();
 
-                        records.push({
-                            dia_semana: diaSemana,
-                            ruta: ws.getCell(`F${r}`).value || "",
-                            lugar: ws.getCell(`J${r}`).value || "",
-                            monto: ws.getCell(`K${r}`).value || 0
-                        });
+                        for (let r = 18; r <= 31; r++) {
+                            const cellA = ws['A' + r];
+                            const d = cellA ? cellA.v : null;
+                            if (d === null || d === undefined) continue;
+
+                            let diaSemana = "OTRO";
+                            try {
+                                const cellB = ws['B' + r];
+                                const cellC = ws['C' + r];
+                                const mo = cellB ? cellB.v : 1;
+                                const yr = cellC ? cellC.v : 2026;
+                                const dateObj = new Date(yr, mo - 1, d);
+                                const wmap = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+                                diaSemana = wmap[dateObj.getDay()];
+                            } catch(e) {}
+
+                            const cellF = ws['F' + r];
+                            const cellJ = ws['J' + r];
+                            const cellK = ws['K' + r];
+
+                            records.push({
+                                dia_semana: diaSemana,
+                                ruta: cellF ? String(cellF.v).trim() : "",
+                                lugar: cellJ ? String(cellJ.v).trim() : "",
+                                monto: cellK ? parseFloat(cellK.v) : 0
+                            });
+                        }
                     }
-                });
 
-                if (!vendorName) { log(`❌ Ignorado: '${file.name}' sin nombre.`); continue; }
-                if (!bancoName || !BANCOS_VALIDOS.includes(bancoName)) { log(`❌ Ignorado: '${file.name}', banco inválido.`); continue; }
-                if (records.length === 0) { log(`⚠️ Ignorado: '${file.name}', sin rutas.`); continue; }
+                    if (!vendorName) { log(`❌ Ignorado: '${file.name}' sin nombre.`); continue; }
+                    if (!bancoName || !BANCOS_VALIDOS.includes(bancoName)) { log(`❌ Ignorado: '${file.name}', banco inválido.`); continue; }
+                    if (records.length === 0) { log(`⚠️ Ignorado: '${file.name}', sin rutas.`); continue; }
 
                 let sheet = masterWb.getWorksheet(bancoName);
                 if (!sheet) {
