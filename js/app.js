@@ -281,9 +281,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const BLOCK_SIZE = 26;
 
             for (let file of uploadedFiles) {
-                const fileBuffer = await file.arrayBuffer();
-                const workerWb = new ExcelJS.Workbook();
-                await workerWb.xlsx.load(fileBuffer);
+                try {
+                    const fileBuffer = await file.arrayBuffer();
+                    const workerWb = new ExcelJS.Workbook();
+                    // Intentar cargar el archivo; algunos xlsx generan errores de ExcelJS
+                    await workerWb.xlsx.load(fileBuffer);
                 
                 let vendorName = null;
                 let bancoName = null;
@@ -397,6 +399,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 log(`✅ Agregado: '${vendorName}' (${records.length} rutas)`);
                 consolidatedCount++;
+                } catch (fileErr) {
+                    console.error(`Error procesando ${file.name}:`, fileErr);
+                    log(`❌ Error leyendo '${file.name}': ${fileErr.message}. Prueba guardarlo como .xlsx desde Excel y reintenta.`);
+                }
             }
 
             if (consolidatedCount === 0) {
