@@ -1,19 +1,24 @@
 {
     "ALVARADO GONZALES CRISTHIAN ALEXANDER": {
-        "dni": "87654321",
+        "dni": "44649773",
         "banco": "BCP"
     },
-    "FELIX EDUARDO ALARCON ARCELA": "71496751",
     "MOGOLLON ALVARADO JACIEL": {
-        "dni": "15987411",
+        "dni": "45298827",
         "banco": "SCOTIABANK"
     },
+    "WILLIAN ALEJANDRO HERRERA MORAN": {
+        "dni": "75512396 ",
+        "banco": "BCP"
+    },    
     "QUISPE MIRANDA DOMITILA": {
-        "dni": "14789632",
+        "dni": "46341069",
         "banco": "SCOTIABANK"
     },
     "QUISPE RENTERÍA JOSÉ DAVID": {
-        "dni": "98563214",
+        "dni": "46515929",
         "banco": "BBVA"
     }
+
+    
 }
